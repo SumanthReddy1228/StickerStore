@@ -7,7 +7,6 @@ import com.eazybytes.eazystore.service.IProductService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
-import tools.jackson.databind.util.BeanUtil;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -20,10 +19,10 @@ public class ProductServiceImpl implements IProductService {
 
     @Override
     public List<ProductDto> getProducts(){
-        return productRepository.findAll().stream().map(this::tramsformToDTO).collect(Collectors.toList());
+        return productRepository.findAll().stream().map(this::transformToDTO).collect(Collectors.toList());
     }
 
-    private ProductDto tramsformToDTO(Product product){
+    private ProductDto transformToDTO(Product product){
         ProductDto productDto= new ProductDto();
         BeanUtils.copyProperties(product,productDto);
         productDto.setProductId(product.getId());
