@@ -1,20 +1,31 @@
 package com.eazybytes.eazystore.exception;
 
 import com.eazybytes.eazystore.dto.ErrorResponseDto;
+import jakarta.validation.ConstraintViolation;
+import jakarta.validation.ConstraintViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.FieldError;
+import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.WebRequest;
+import org.springframework.web.servlet.View;
 
 import java.time.LocalDateTime;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 @RestControllerAdvice
 public class GlobalException {
     private final WebRequest webRequest;
+    private final View error;
 
-    public GlobalException(WebRequest webRequest) {
+    public GlobalException(WebRequest webRequest, View error) {
         this.webRequest = webRequest;
+        this.error = error;
     }
 
     @ExceptionHandler(Exception.class)
@@ -22,5 +33,24 @@ public class GlobalException {
 
         ErrorResponseDto errorResponseDto=new ErrorResponseDto(webRequest.getDescription(false), HttpStatus.INTERNAL_SERVER_ERROR,exception.getMessage(), LocalDateTime.now());
         return new ResponseEntity<>(errorResponseDto,HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+
+
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ResponseEntity<Map<String,String>> handleValidationException(MethodArgumentNotValidException exception){
+            Map<String ,String> errors = new HashMap<>();
+            List<FieldError> fieldErrors= exception.getBindingResult().getFieldErrors();
+            fieldErrors.forEach(error->errors.put(error.getField(),error.getDefaultMessage()));
+            return ResponseEntity.badRequest().body(errors);
+    }
+    @ExceptionHandler(ConstraintViolationException.class)
+    public ResponseEntity<Map<String, String>> handleConstraintViolationException(
+            ConstraintViolationException exception) {
+        Map<String, String> errors = new HashMap<>();
+        Set<ConstraintViolation<?>> constraintViolationSet = exception.getConstraintViolations();
+        constraintViolationSet.forEach(constraintViolation ->
+                errors.put(constraintViolation.getPropertyPath().toString(),
+                        constraintViolation.getMessage()));
+        return ResponseEntity.badRequest().body(errors);
     }
 }
